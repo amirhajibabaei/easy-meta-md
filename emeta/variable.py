@@ -4,14 +4,14 @@ import torch
 
 class Variable:
 
-    def _call(self, var, atoms):
+    def _call(self, var, *eval_args, **eval_kwargs):
         if issubclass(var.__class__, Variable):
-            return var(atoms)
+            return var(*eval_args, **eval_kwargs)
         else:
             return var
 
-    def __call__(self, atoms):
-        return self.eval(atoms)
+    def __call__(self, *eval_args, **eval_kwargs):
+        return self.eval(*eval_args, **eval_kwargs)
 
     def __add__(self, other):
         return binary_op(self, other, Sum)
@@ -80,10 +80,10 @@ class Binary(Variable):
     def __repr__(self):
         return self.symbol.join([str(arg) for arg in self.args])
 
-    def eval(self, atoms):
-        result = self._call(self.args[0], atoms)
+    def eval(self, *eval_args, **eval_kwargs):
+        result = self._call(self.args[0], *eval_args, **eval_kwargs)
         for arg in self.args[1:]:
-            a = self._call(arg, atoms)
+            a = self._call(arg, *eval_args, **eval_kwargs)
             result = self._eval(result, a)
         return result
 
@@ -146,8 +146,8 @@ class Neg(Variable):
     def __repr__(self):
         return f'-{self.arg}'
 
-    def eval(self, atoms):
-        return -self._call(self.arg, atoms)
+    def eval(self, *eval_args, **eval_kwargs):
+        return -self._call(self.arg, *eval_args, **eval_kwargs)
 
 
 class Torch(Variable):
@@ -158,6 +158,7 @@ class Torch(Variable):
         self.args = args
         self.kwargs = kwargs
 
-    def eval(self, atoms):
-        args = (self._call(arg, atoms) for arg in self.args[1:])
+    def eval(self, *eval_args, **eval_kwargs):
+        args = (self._call(arg, *eval_args, **eval_kwargs)
+                for arg in self.args[1:])
         return self.func(*args, **self.kwargs)
