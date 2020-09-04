@@ -1,7 +1,4 @@
 # +
-import torch
-
-
 class Variable:
 
     def _call(self, var, *eval_args, **eval_kwargs):
@@ -150,15 +147,16 @@ class Neg(Variable):
         return -self._call(self.arg, *eval_args, **eval_kwargs)
 
 
-class Torch(Variable):
+class Ext(Variable):
 
     def __init__(self, *args, **kwargs):
-        """first arg should be a pytorch function"""
-        self.func = getattr(torch, args[0])
-        self.args = args
+        """first arg should be a function"""
+        self._func = args[0]
+        self._args = args[1:]
+        self.args = (self._func.__name__, *self._args)
         self.kwargs = kwargs
 
     def eval(self, *eval_args, **eval_kwargs):
         args = (self._call(arg, *eval_args, **eval_kwargs)
-                for arg in self.args[1:])
-        return self.func(*args, **self.kwargs)
+                for arg in self._args)
+        return self._func(*args, **self.kwargs)
