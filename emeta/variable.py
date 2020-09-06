@@ -1,7 +1,10 @@
 # +
 class Variable:
 
-    def _call(self, var, *eval_args, **eval_kwargs):
+    def eval(self, *eval_args, **eval_kwargs):
+        raise RuntimeError('implement in a subclass')
+
+    def _eval(self, var, *eval_args, **eval_kwargs):
         if issubclass(var.__class__, Variable):
             return var(*eval_args, **eval_kwargs)
         else:
@@ -78,10 +81,10 @@ class Binary(Variable):
         return self.symbol.join([str(arg) for arg in self.args])
 
     def eval(self, *eval_args, **eval_kwargs):
-        result = self._call(self.args[0], *eval_args, **eval_kwargs)
+        result = self._eval(self.args[0], *eval_args, **eval_kwargs)
         for arg in self.args[1:]:
-            a = self._call(arg, *eval_args, **eval_kwargs)
-            result = self._eval(result, a)
+            a = self._eval(arg, *eval_args, **eval_kwargs)
+            result = self.op(result, a)
         return result
 
 
@@ -91,7 +94,7 @@ class Sum(Binary):
         super().__init__(*args)
         self.symbol = ' + '
 
-    def _eval(self, a, b):
+    def op(self, a, b):
         return a + b
 
 
@@ -101,7 +104,7 @@ class Sub(Binary):
         super().__init__(*args)
         self.symbol = ' - '
 
-    def _eval(self, a, b):
+    def op(self, a, b):
         return a - b
 
 
@@ -111,7 +114,7 @@ class Mul(Binary):
         super().__init__(*args)
         self.symbol = '*'
 
-    def _eval(self, a, b):
+    def op(self, a, b):
         return a*b
 
 
@@ -121,7 +124,7 @@ class Div(Binary):
         super().__init__(*args)
         self.symbol = '/'
 
-    def _eval(self, a, b):
+    def op(self, a, b):
         return a/b
 
 
@@ -131,7 +134,7 @@ class Pow(Binary):
         super().__init__(*args)
         self.symbol = '**'
 
-    def _eval(self, a, b):
+    def op(self, a, b):
         return a**b
 
 
@@ -144,7 +147,7 @@ class Neg(Variable):
         return f'-{self.arg}'
 
     def eval(self, *eval_args, **eval_kwargs):
-        return -self._call(self.arg, *eval_args, **eval_kwargs)
+        return -self._eval(self.arg, *eval_args, **eval_kwargs)
 
 
 class Ext(Variable):
@@ -157,6 +160,6 @@ class Ext(Variable):
         self.kwargs = kwargs
 
     def eval(self, *eval_args, **eval_kwargs):
-        args = (self._call(arg, *eval_args, **eval_kwargs)
+        args = (self._eval(arg, *eval_args, **eval_kwargs)
                 for arg in self._args)
         return self._func(*args, **self.kwargs)
