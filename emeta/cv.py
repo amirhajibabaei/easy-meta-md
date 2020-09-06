@@ -3,7 +3,11 @@ from emeta.variable import Variable
 import torch
 
 
-class C(Variable):
+class Atomic(Variable):
+    pass
+
+
+class C(Atomic):
     """cell"""
 
     def __init__(self, *args):
@@ -13,7 +17,7 @@ class C(Variable):
         return atoms.lll[self.args]
 
 
-class P(Variable):
+class P(Atomic):
     """positions"""
 
     def __init__(self, *args):
@@ -23,7 +27,7 @@ class P(Variable):
         return atoms.xyz[self.args]
 
 
-class SP(Variable):
+class SP(Atomic):
     """scaled positions"""
 
     def __init__(self, *args):
@@ -37,7 +41,7 @@ class SP(Variable):
         return r
 
 
-class D(Variable):
+class D(Atomic):
     """distance"""
 
     def __init__(self, i, j, mic=False, vector=False):
