@@ -55,3 +55,18 @@ class Biased(Calculator):
                 volume = -2.  # here stress2=0, thus trace(stress) = virial (?)
             stress = (s1 + s2)/volume
             self.results['stress'] += stress.flat[[0, 4, 8, 5, 2, 1]]
+
+
+def log_to_fig(file='biased.log'):
+    import numpy as np
+    import pylab as plt
+    e, b = np.loadtxt(file, unpack=True)
+    fig, axe = plt.subplots(1, 1)
+    axe.plot(e)
+    axb = axe.twinx()
+    axe.plot(e)
+    axb.plot(b)
+    axe.set_xlabel('step')
+    axe.set_ylabel('potential energy')
+    axb.set_ylabel('bias energy')
+    return fig
