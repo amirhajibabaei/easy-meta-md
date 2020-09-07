@@ -10,7 +10,8 @@ class Biased(Calculator):
         self.bias = bias
         self._calc = calc
         self.logfile = logfile
-        self.log('# energy bias', 'w')
+        self.log(f'# bias = {bias}', 'w')
+        self.log(f'# energy bias')
 
     def log(self, mssge, mode='a'):
         if self.logfile:
