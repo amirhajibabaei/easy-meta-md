@@ -5,10 +5,17 @@ import torch
 
 class Biased(Calculator):
 
-    def __init__(self, bias, calc):
+    def __init__(self, bias, calc, logfile='biased.log'):
         super().__init__()
         self.bias = bias
         self._calc = calc
+        self.logfile = logfile
+        self.log('# energy bias', 'w')
+
+    def log(self, mssge, mode='a'):
+        if self.logfile:
+            with open(self.logfile, mode) as f:
+                f.write(f'{mssge}\n')
 
     @property
     def implemented_properties(self):
@@ -27,6 +34,7 @@ class Biased(Calculator):
 
         # energy & forces
         e = self.bias(atoms)
+        self.log('{} {}'.format(self.results['energy'], float(e)))
         e.backward()
         f = -atoms.xyz.grad.detach().numpy()
         self.results['energy'] += float(e)
