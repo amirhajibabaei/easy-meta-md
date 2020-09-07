@@ -62,11 +62,14 @@ def log_to_fig(file='biased.log'):
     import pylab as plt
     e, b = np.loadtxt(file, unpack=True)
     fig, axe = plt.subplots(1, 1)
-    axe.plot(e)
-    axb = axe.twinx()
-    axe.plot(e)
-    axb.plot(b)
+    #
+    color = 'blue'
+    axe.plot(e, color=color)
     axe.set_xlabel('step')
-    axe.set_ylabel('potential energy')
-    axb.set_ylabel('bias energy')
+    axe.set_ylabel('potential', color=color)
+    #
+    color = 'red'
+    axb = axe.twinx()
+    axb.plot(b, color=color)
+    axb.set_ylabel('bias', color=color)
     return fig
