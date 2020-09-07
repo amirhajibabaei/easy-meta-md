@@ -1,5 +1,6 @@
 # +
 from ase.calculators.calculator import Calculator, all_changes
+import torch
 
 
 class Biased(Calculator):
