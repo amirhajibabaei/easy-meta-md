@@ -15,11 +15,10 @@ class Kernel(Variable):
     def __call__(self, *args, **kwargs):
         x1 = self.u(*args, **kwargs)
         x2 = self.v(*args, **kwargs)
-        dim = tuple(range(abs(x1.dim()-x2.dim()), max(x1.dim(), x2.dim())))
-        return self.eval(x1, x2, dim=dim)
+        return self.eval(x1, x2)
 
 
-class Gaussian(Kernel):
+class Dist(Kernel):
 
     def __init__(self, u, v, scale):
         super().__init__(u, v)
@@ -29,5 +28,21 @@ class Gaussian(Kernel):
     def args(self):
         return (*super().args, self.scale)
 
-    def eval(self, x1, x2, dim):
-        return (x1-x2).div(self.scale).pow(2).sum(dim=dim).neg().exp()
+    def eval(self, x1, x2):
+        delta = (x1-x2).div(self.scale)
+        dim = tuple(range(abs(x1.dim()-x2.dim()), max(x1.dim(), x2.dim())))
+        if len(dim) > 0:
+            delta = delta.norm(dim=dim)
+        else:
+            delta = delta.abs()
+        return delta
+
+
+class Gaussian(Dist):
+
+    def __init__(self, u, v, scale):
+        super().__init__(u, v, scale)
+        self.scale = scale
+
+    def eval(self, x1, x2):
+        return super().eval(x1, x2).pow(2).neg().exp()
