@@ -1,6 +1,8 @@
 # +
+from ase.geometry.geometry import wrap_positions
 from emeta.variable import Variable
 import torch
+import numpy as np
 
 
 class Atomic(Variable):
@@ -38,6 +40,19 @@ class SP(Atomic):
         rc = atoms.cell.reciprocal().array
         r = p@torch.from_numpy(rc)
         r = r % 1.
+        return r
+
+
+class WP(Atomic):
+    """wraped positions"""
+
+    def __init__(self, *args):
+        self.args = args
+
+    def eval(self, atoms):
+        _p = np.atleast_2d(atoms.positions[self.args])
+        p = wrap_positions(_p, atoms.cell, pbc=atoms.pbc)
+        r = atoms.xyz[self.args] + torch.from_numpy(p-_p)
         return r
 
 
