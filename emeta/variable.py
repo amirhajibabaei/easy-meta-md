@@ -37,6 +37,12 @@ class Variable:
     def __rtruediv__(self, other):
         return binary_op(other, self, Div)
 
+    def __mod__(self, other):
+        return binary_op(self, other, Mod)
+
+    def __rmod__(self, other):
+        return binary_op(other, self, Mod)
+
     def __pow__(self, other):
         return binary_op(self, other, Pow)
 
@@ -126,6 +132,16 @@ class Div(Binary):
 
     def op(self, a, b):
         return a/b
+
+
+class Mod(Binary):
+
+    def __init__(self, *args):
+        super().__init__(*args)
+        self.symbol = '%'
+
+    def op(self, a, b):
+        return a % b
 
 
 class Pow(Binary):
