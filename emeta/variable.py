@@ -4,12 +4,6 @@ class Variable:
     def eval(self, *eval_args, **eval_kwargs):
         raise RuntimeError('implement in a subclass')
 
-    def _eval(self, var, *eval_args, **eval_kwargs):
-        if issubclass(var.__class__, Variable):
-            return var(*eval_args, **eval_kwargs)
-        else:
-            return var
-
     def __call__(self, *eval_args, **eval_kwargs):
         return self.eval(*eval_args, **eval_kwargs)
 
@@ -67,6 +61,13 @@ class Variable:
         return LazyGen(self, attr)
 
 
+def eval(var, *eval_args, **eval_kwargs):
+    if issubclass(var.__class__, Variable):
+        return var(*eval_args, **eval_kwargs)
+    else:
+        return var
+
+
 class LazyGen:
 
     def __init__(self, _self, attr):
@@ -87,7 +88,7 @@ class Lazy(Variable):
         self.kwargs = kwargs
 
     def eval(self, *eval_args, **eval_kwargs):
-        val = self._eval(self.var, *eval_args, **eval_kwargs)
+        val = eval(self.var, *eval_args, **eval_kwargs)
         return getattr(val, self.attr)(*self._args, **self.kwargs)
 
 
@@ -114,9 +115,9 @@ class Binary(Variable):
         return self.symbol.join([str(arg) for arg in self.args])
 
     def eval(self, *eval_args, **eval_kwargs):
-        result = self._eval(self.args[0], *eval_args, **eval_kwargs)
+        result = eval(self.args[0], *eval_args, **eval_kwargs)
         for arg in self.args[1:]:
-            a = self._eval(arg, *eval_args, **eval_kwargs)
+            a = eval(arg, *eval_args, **eval_kwargs)
             result = self.op(result, a)
         return result
 
@@ -190,7 +191,7 @@ class Neg(Variable):
         return f'-{self.arg}'
 
     def eval(self, *eval_args, **eval_kwargs):
-        return -self._eval(self.arg, *eval_args, **eval_kwargs)
+        return -eval(self.arg, *eval_args, **eval_kwargs)
 
 
 class Ext(Variable):
@@ -203,6 +204,6 @@ class Ext(Variable):
         self.kwargs = kwargs
 
     def eval(self, *eval_args, **eval_kwargs):
-        args = (self._eval(arg, *eval_args, **eval_kwargs)
+        args = (eval(arg, *eval_args, **eval_kwargs)
                 for arg in self._args)
         return self._func(*args, **self.kwargs)
