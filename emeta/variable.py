@@ -63,6 +63,33 @@ class Variable:
             raise RuntimeError('define args [and kwargs] or __repr__')
         return f'{self.__class__.__name__}({args})'
 
+    def __getattr__(self, attr):
+        return LazyGen(self, attr)
+
+
+class LazyGen:
+
+    def __init__(self, _self, attr):
+        self.self = _self
+        self.attr = attr
+
+    def __call__(self, *args, **kwargs):
+        return Lazy(self.self, self.attr, *args, **kwargs)
+
+
+class Lazy(Variable):
+
+    def __init__(self, var, attr, *args, **kwargs):
+        self.var = var
+        self.attr = attr
+        self.args = (var, attr, *args)
+        self._args = args
+        self.kwargs = kwargs
+
+    def eval(self, *eval_args, **eval_kwargs):
+        val = self._eval(self.var, *eval_args, **eval_kwargs)
+        return getattr(val, self.attr)(*self._args, **self.kwargs)
+
 
 def binary_op(self, other, Cls):
     s = self.__class__ == Cls
