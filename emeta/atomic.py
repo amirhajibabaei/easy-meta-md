@@ -44,10 +44,10 @@ class Scaled(Atomic):
 
     def __init__(self, vectors):
         super().__init__(vectors)
-        self.args = (vectors,)
+        self.vectors = vectors
 
     def eval(self, data):
-        vectors = self.args[0](data)
+        vectors = self.vectors(data)
         return vectors @ data.rcell
 
 
@@ -55,10 +55,10 @@ class Wrapped(Atomic):
 
     def __init__(self, vectors):
         super().__init__(vectors)
-        self.args = (vectors,)
+        self.vectors = vectors
 
     def eval(self, data):
-        vectors = self.args[0](data)
+        vectors = self.vectors(data)
         scaled = (vectors @ data.rcell) % 1
         return scaled @ data.cell
 
@@ -67,10 +67,10 @@ class Mic(Atomic):
 
     def __init__(self, vectors):
         super().__init__(vectors)
-        self.args = (vectors,)
+        self.vectors = vectors
 
     def eval(self, data):
-        vectors = self.args[0](data)
+        vectors = self.vectors(data)
         scaled = (vectors @ data.rcell) % 1
         mic = torch.where(scaled <= 0.5, scaled, scaled-1.)
         rescaled = mic @ data.cell
