@@ -5,16 +5,16 @@ import torch
 
 class History(Variable):
 
-    def __init__(self, var, file='history.txt'):
+    def __init__(self, var, file=None):
+        super().__init__(var, file=file)
         self.var = var
-        self.args = (var,)
-        self.kwargs = dict(file=file)
+        self.file = file
         self.history = []
         self.write(f'# {var}', 'w')
 
     def write(self, msg, mode='a'):
-        if self.kwargs['file']:
-            with open(self.kwargs['file'], mode) as f:
+        if self.file:
+            with open(self.file, mode) as f:
                 f.write(f'{msg}\n')
 
     def eval(self, *args, append=True, **kwargs):
