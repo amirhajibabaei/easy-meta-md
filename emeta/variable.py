@@ -1,6 +1,10 @@
 # +
 class Variable:
 
+    def __init__(self, *init_args, **init_kwargs):
+        self.init_args = init_args
+        self.init_kwargs = init_kwargs
+
     def eval(self, *eval_args, **eval_kwargs):
         raise RuntimeError('implement in a subclass')
 
@@ -45,16 +49,16 @@ class Variable:
 
     def __repr__(self):
         try:
-            args = ', '.join((str(arg) for arg in self.args))
+            args = ', '.join((str(arg) for arg in self.init_args))
             try:
-                if len(self.kwargs):
+                if len(self.init_kwargs):
                     kwargs = ', '.join(
-                        (f'{a}={b}' for a, b in self.kwargs.items()))
+                        (f'{a}={b}' for a, b in self.init_kwargs.items()))
                     args = ', '.join((args, kwargs))
             except:
                 pass
         except:
-            raise RuntimeError('define args [and kwargs] or __repr__')
+            raise RuntimeError('whaaat?!')
         return f'{self.__class__.__name__}({args})'
 
     def __getattr__(self, attr):
@@ -83,15 +87,15 @@ class LazyGen:
 class Lazy(Variable):
 
     def __init__(self, var, attr, *args, **kwargs):
+        super().__init__(var, attr, *args, **kwargs)
         self.var = var
         self.attr = attr
-        self.args = (var, attr, *args)
-        self._args = args
+        self.args = args
         self.kwargs = kwargs
 
     def eval(self, *eval_args, **eval_kwargs):
         val = eval(self.var, *eval_args, **eval_kwargs)
-        return getattr(val, self.attr)(*self._args, **self.kwargs)
+        return getattr(val, self.attr)(*self.args, **self.kwargs)
 
 
 def binary_op(self, other, Cls):
@@ -110,6 +114,7 @@ def binary_op(self, other, Cls):
 class Binary(Variable):
 
     def __init__(self, *args):
+        super().__init__(*args)
         self.args = args
         self.symbol = None
 
@@ -187,6 +192,7 @@ class Pow(Binary):
 class Neg(Variable):
 
     def __init__(self, arg):
+        super().__init__(arg)
         self.arg = arg
 
     def __repr__(self):
@@ -198,14 +204,14 @@ class Neg(Variable):
 
 class Ext(Variable):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, func, *args, **kwargs):
+        super().__init__(self, func, *args, **kwargs)
         """first arg should be a function"""
-        self._func = args[0]
-        self._args = args[1:]
-        self.args = (self._func.__name__, *self._args)
+        self.func = func
+        self.args = args
         self.kwargs = kwargs
 
     def eval(self, *eval_args, **eval_kwargs):
         args = (eval(arg, *eval_args, **eval_kwargs)
-                for arg in self._args)
-        return self._func(*args, **self.kwargs)
+                for arg in self.args)
+        return self.func(*args, **self.kwargs)
