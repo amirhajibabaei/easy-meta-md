@@ -15,12 +15,15 @@ class Data:
 
 
 class Atomic(Variable):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class Cell(Atomic):
 
     def __init__(self, *args):
+        super().__init__(*args)
         self.args = args
 
     def eval(self, data):
@@ -30,6 +33,7 @@ class Cell(Atomic):
 class Pos(Atomic):
 
     def __init__(self, *args):
+        super().__init__(*args)
         self.args = args
 
     def eval(self, data):
@@ -39,6 +43,7 @@ class Pos(Atomic):
 class Scaled(Atomic):
 
     def __init__(self, vectors):
+        super().__init__(vectors)
         self.args = (vectors,)
 
     def eval(self, data):
@@ -49,6 +54,7 @@ class Scaled(Atomic):
 class Wrapped(Atomic):
 
     def __init__(self, vectors):
+        super().__init__(vectors)
         self.args = (vectors,)
 
     def eval(self, data):
@@ -60,6 +66,7 @@ class Wrapped(Atomic):
 class Mic(Atomic):
 
     def __init__(self, vectors):
+        super().__init__(vectors)
         self.args = (vectors,)
 
     def eval(self, data):
