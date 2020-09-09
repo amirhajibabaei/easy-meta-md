@@ -200,18 +200,3 @@ class Neg(Variable):
 
     def eval(self, *eval_args, **eval_kwargs):
         return -eval(self.arg, *eval_args, **eval_kwargs)
-
-
-class Ext(Variable):
-
-    def __init__(self, func, *args, **kwargs):
-        super().__init__(self, func, *args, **kwargs)
-        """first arg should be a function"""
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-
-    def eval(self, *eval_args, **eval_kwargs):
-        args = (eval(arg, *eval_args, **eval_kwargs)
-                for arg in self.args)
-        return self.func(*args, **self.kwargs)
