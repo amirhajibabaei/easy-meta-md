@@ -1,5 +1,6 @@
 # +
 from ase.calculators.calculator import Calculator, all_changes
+from emeta.atomic import Data
 import torch
 
 
@@ -26,26 +27,21 @@ class Biased(Calculator):
         super().calculate(atoms, properties, system_changes)
         self._calc.calculate(self.atoms)
         self.results = self._calc.results
-
-        atoms = self.atoms
-        atoms.xyz = torch.from_numpy(atoms.positions)
-        atoms.xyz.requires_grad = True
-        atoms.lll = torch.from_numpy(atoms.cell.array)
-        atoms.lll.requires_grad = True
+        data = Data(self.atoms)
 
         # energy & forces
-        e = self.bias(atoms)
+        e = self.bias(data)
         self.log('{} {}'.format(self.results['energy'], float(e)))
         e.backward()
-        f = -atoms.xyz.grad.detach().numpy()
+        f = -data.pos.grad.detach().numpy()
         self.results['energy'] += float(e)
         self.results['forces'] += f
 
         # stress
         if 'stress' in self.results.keys():
             s1 = -(f[:, None]*atoms.positions[..., None]).sum(axis=0)
-            if atoms.lll.grad is not None:
-                c = atoms.lll.grad.detach().numpy()
+            if data.cell.grad is not None:
+                c = data.cell.grad.detach().numpy()
                 s2 = (c[:, None]*atoms.cell[..., None]).sum(axis=0)
             else:
                 s2 = 0
