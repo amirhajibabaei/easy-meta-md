@@ -1,77 +1,70 @@
 # +
-from ase.geometry.geometry import wrap_positions
 from emeta.variable import Variable
 import torch
-import numpy as np
+
+
+class Data:
+
+    def __init__(self, atoms):
+        self.pos = torch.from_numpy(atoms.positions)
+        self.pos.requires_grad = True
+        self.cell = torch.from_numpy(atoms.cell.array)
+        self.cell.requires_grad = True
+        self.rcell = self.cell.inverse()
+        self.pbc = atoms.pbc
 
 
 class Atomic(Variable):
     pass
 
 
-class C(Atomic):
-    """cell"""
+class Cell(Atomic):
 
     def __init__(self, *args):
         self.args = args
 
-    def eval(self, atoms):
-        return atoms.lll[self.args]
+    def eval(self, data):
+        return data.cell[self.args]
 
 
-class P(Atomic):
-    """positions"""
-
-    def __init__(self, *args):
-        self.args = args
-
-    def eval(self, atoms):
-        return atoms.xyz[self.args]
-
-
-class SP(Atomic):
-    """scaled positions"""
+class Pos(Atomic):
 
     def __init__(self, *args):
         self.args = args
 
-    def eval(self, atoms):
-        p = atoms.xyz[self.args]
-        rc = atoms.cell.reciprocal().array
-        r = p@torch.from_numpy(rc)
-        r = r % 1.
-        return r
+    def eval(self, data):
+        return data.pos[self.args]
 
 
-class WP(Atomic):
-    """wraped positions"""
+class Scaled(Atomic):
 
-    def __init__(self, *args):
-        self.args = args
+    def __init__(self, vectors):
+        self.args = (vectors,)
 
-    def eval(self, atoms):
-        _p = np.atleast_2d(atoms.positions[self.args])
-        p = wrap_positions(_p, atoms.cell, pbc=atoms.pbc)
-        r = atoms.xyz[self.args] + torch.from_numpy(p-_p)
-        return r
+    def eval(self, data):
+        vectors = self.args[0](data)
+        return vectors @ data.rcell
 
 
-class D(Atomic):
-    """distance"""
+class Wrapped(Atomic):
 
-    def __init__(self, i, j, mic=False, vector=False):
-        self.i = i
-        self.j = j
-        self.mic = mic
-        self.vector = vector
-        self.args = (i, j)
-        self.kwargs = dict(mic=mic, vector=vector)
+    def __init__(self, vectors):
+        self.args = (vectors,)
 
-    def eval(self, atoms):
-        raw = atoms[self.j].position - atoms[self.i].position
-        real = atoms.get_distance(self.i, self.j, mic=self.mic, vector=True)
-        result = (atoms.xyz[self.j] - atoms.xyz[self.i] +
-                  torch.from_numpy(real-raw))
-        if not self.vector:
-            result = result.norm()
-        return result
+    def eval(self, data):
+        vectors = self.args[0](data)
+        scaled = (vectors @ data.rcell) % 1
+        return scaled @ data.cell
+
+
+class Mic(Atomic):
+
+    def __init__(self, vectors):
+        self.args = (vectors,)
+
+    def eval(self, data):
+        vectors = self.args[0](data)
+        scaled = (vectors @ data.rcell) % 1
+        mic = torch.where(scaled <= 0.5, scaled, scaled-1.)
+        rescaled = mic @ data.cell
+        return rescaled
