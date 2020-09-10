@@ -4,12 +4,31 @@ class Variable:
     def __init__(self, *init_args, **init_kwargs):
         self.init_args = init_args
         self.init_kwargs = init_kwargs
+        self.dependencies = set()
+        for arg in (*init_args, *init_kwargs.values()):
+            if isinstance(arg, Variable):
+                self.dependencies.add(arg)
+                arg.dependants.add(self)
+        self.dependants = set()
+        self.result = None
 
     def eval(self, *eval_args, **eval_kwargs):
         raise RuntimeError('implement in a subclass')
 
     def __call__(self, *eval_args, **eval_kwargs):
-        return self.eval(*eval_args, **eval_kwargs)
+        if self.result is None:
+            self.result = self.eval(*eval_args, **eval_kwargs)
+        return self.result
+
+    def _forward(self):
+        self.result = None
+        for dep in self.dependants:
+            dep._forward()
+
+    def _backward(self):
+        self.result = None
+        for dep in self.dependencies:
+            dep._backward()
 
     def __add__(self, other):
         return binary_op(self, other, Sum)
