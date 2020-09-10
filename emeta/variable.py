@@ -85,9 +85,7 @@ class Variable:
 
 
 def eval(var, *eval_args, **eval_kwargs):
-    if var is None:
-        return None
-    elif issubclass(var.__class__, Variable):
+    if isinstance(var, Variable):
         return var(*eval_args, **eval_kwargs)
     else:
         return var
