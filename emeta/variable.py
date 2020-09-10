@@ -75,11 +75,9 @@ class Variable:
 
 
 def argstr(*args, **kwargs):
-    ar = ', '.join((str(arg) for arg in args))
-    if len(kwargs):
-        kw = ', '.join((f'{a}={b}' for a, b in kwargs.items()))
-        ar = ', '.join((ar, kw))
-    return ar
+    ar = (*(str(arg) for arg in args),
+          *(f'{a}={b}' for a, b in kwargs.items()))
+    return ', '.join(ar)
 
 
 def eval(var, *eval_args, **eval_kwargs):
@@ -111,6 +109,10 @@ class Lazy(Variable):
     def eval(self, *eval_args, **eval_kwargs):
         val = eval(self.var, *eval_args, **eval_kwargs)
         return getattr(val, self.attr)(*self.args, **self.kwargs)
+
+    def __repr__(self):
+        args = argstr(*self.args, **self.kwargs)
+        return f'{self.var}.{self.attr}({args})'
 
 
 def binary_op(self, other, Cls):
@@ -211,7 +213,7 @@ class Neg(Variable):
         self.arg = arg
 
     def __repr__(self):
-        return f'-{self.arg}'
+        return f'(-{self.arg})'
 
     def eval(self, *eval_args, **eval_kwargs):
         return -eval(self.arg, *eval_args, **eval_kwargs)
