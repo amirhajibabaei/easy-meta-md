@@ -30,6 +30,7 @@ class Biased(Calculator):
         data = Data(self.atoms)
 
         # energy & forces
+        self.bias._backward()
         e = self.bias(data)
         self.log('{} {}'.format(self.results['energy'], float(e)))
         e.backward()
