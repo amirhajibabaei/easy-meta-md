@@ -67,17 +67,11 @@ class Variable:
         return Neg(self)
 
     def __repr__(self):
-        try:
-            args = ', '.join((str(arg) for arg in self.init_args))
-            try:
-                if len(self.init_kwargs):
-                    kwargs = ', '.join(
-                        (f'{a}={b}' for a, b in self.init_kwargs.items()))
-                    args = ', '.join((args, kwargs))
-            except:
-                pass
-        except:
-            raise RuntimeError('whaaat?!')
+        args = ', '.join((str(arg) for arg in self.init_args))
+        if len(self.init_kwargs):
+            kwargs = ', '.join(
+                (f'{a}={b}' for a, b in self.init_kwargs.items()))
+            args = ', '.join((args, kwargs))
         return f'{self.__class__.__name__}({args})'
 
     def __getattr__(self, attr):
