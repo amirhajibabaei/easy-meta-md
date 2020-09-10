@@ -67,15 +67,19 @@ class Variable:
         return Neg(self)
 
     def __repr__(self):
-        args = ', '.join((str(arg) for arg in self.init_args))
-        if len(self.init_kwargs):
-            kwargs = ', '.join(
-                (f'{a}={b}' for a, b in self.init_kwargs.items()))
-            args = ', '.join((args, kwargs))
+        args = argstr(*self.init_args, **self.init_kwargs)
         return f'{self.__class__.__name__}({args})'
 
     def __getattr__(self, attr):
         return LazyGen(self, attr)
+
+
+def argstr(*args, **kwargs):
+    ar = ', '.join((str(arg) for arg in args))
+    if len(kwargs):
+        kw = ', '.join((f'{a}={b}' for a, b in kwargs.items()))
+        ar = ', '.join((ar, kw))
+    return ar
 
 
 def eval(var, *eval_args, **eval_kwargs):
