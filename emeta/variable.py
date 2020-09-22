@@ -71,7 +71,7 @@ class Variable:
         return f'{self.__class__.__name__}({args})'
 
     def __getattr__(self, attr):
-        return LazyGen(self, attr)
+        return GetAttr(self, attr)
 
 
 def argstr(*args, **kwargs):
@@ -87,17 +87,17 @@ def eval(var, *eval_args, **eval_kwargs):
         return var
 
 
-class LazyGen:
+class GetAttr:
 
     def __init__(self, _self, attr):
         self.self = _self
         self.attr = attr
 
     def __call__(self, *args, **kwargs):
-        return Lazy(self.self, self.attr, *args, **kwargs)
+        return Attr(self.self, self.attr, *args, **kwargs)
 
 
-class Lazy(Variable):
+class Attr(Variable):
 
     def __init__(self, var, attr, *args, **kwargs):
         super().__init__(var, attr, *args, **kwargs)
@@ -136,7 +136,7 @@ class Binary(Variable):
         self.symbol = None
 
     def __repr__(self):
-        return self.symbol.join([str(arg) for arg in self.args])
+        return f'({self.symbol.join([str(arg) for arg in self.args])})'
 
     def eval(self, *eval_args, **eval_kwargs):
         result = eval(self.args[0], *eval_args, **eval_kwargs)
