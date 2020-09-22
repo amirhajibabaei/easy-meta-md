@@ -224,3 +224,19 @@ class Neg(Variable):
 
     def eval(self, *eval_args, **eval_kwargs):
         return -eval(self.arg, *eval_args, **eval_kwargs)
+
+
+class Param(Variable):
+
+    data = {}
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.name = name
+
+    def eval(self, *args, **kwargs):
+        return Param.data[self.name]
+
+    def set(self, value):
+        Param.data[self.name] = value
+        self._forward()
