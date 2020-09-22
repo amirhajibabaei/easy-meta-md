@@ -74,9 +74,16 @@ class Variable:
         return GetAttr(self, attr)
 
 
+def asstr(arg):
+    if type(arg) == str:
+        return f'"{arg}"'
+    else:
+        return f'{arg}'
+
+
 def argstr(*args, **kwargs):
-    ar = (*(str(arg) for arg in args),
-          *(f'{a}={b}' for a, b in kwargs.items()))
+    ar = (*(asstr(arg) for arg in args),
+          *(f'{a}={asstr(b)}' for a, b in kwargs.items()))
     return ', '.join(ar)
 
 
