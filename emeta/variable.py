@@ -5,10 +5,15 @@ class Variable:
         self.init_args = init_args
         self.init_kwargs = init_kwargs
         self.dependencies = set()
+        if isinstance(self, Param):
+            self.params = set({self})
+        else:
+            self.params = set()
         for arg in (*init_args, *init_kwargs.values()):
             if isinstance(arg, Variable):
                 self.dependencies.add(arg)
                 arg.dependants.add(self)
+                self.params = self.params.union(arg.params)
         self.dependants = set()
         self.result = None
 
