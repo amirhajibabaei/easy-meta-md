@@ -240,3 +240,8 @@ class Param(Variable):
     def set(self, value):
         Param.data[self.name] = value
         self._forward()
+
+    def add(self, value):
+        Param.data[self.name].data += value
+        Param.data[self.name].grad = None
+        self._forward()
