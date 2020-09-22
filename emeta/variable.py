@@ -234,6 +234,7 @@ class Neg(Variable):
 class Param(Variable):
 
     data = {}
+    dot_data = {}
 
     def __init__(self, name):
         super().__init__(name)
@@ -250,3 +251,21 @@ class Param(Variable):
         Param.data[self.name].data += value
         Param.data[self.name].grad = None
         self._forward()
+
+    @property
+    def force(self):
+        f = Param.data[self.name].grad
+        if f is not None:
+            f *= -1
+        return f
+
+    @property
+    def dot(self):
+        if self.name in Param.dot_data:
+            return Param.dot_data[self.name]
+
+    def dot_set(self, value):
+        Param.dot_data[self.name] = value
+
+    def dot_add(self, value):
+        Param.dot_data[self.name] += value
