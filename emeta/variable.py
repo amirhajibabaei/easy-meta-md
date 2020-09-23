@@ -245,7 +245,6 @@ class Par(Variable):
         self.name = name
         Par.instances[name] = self
         self.params.add(self)
-        self.external = lambda x: 0.
 
     def eval(self):
         return self.value
@@ -255,22 +254,18 @@ class Par(Variable):
 
     def set(self, value):
         self.value = value
-        self._ext = None
         self._forward()
 
     def add(self, value):
         self.value.data += value
         self.value.grad = None
-        self._ext = None
         self._forward()
 
     @property
     def force(self):
         f = self.value.grad
-        if self._ext is None:
-            self._ext = self.external(self)
         if f is not None:
-            return -f + self._ext
+            return -f
 
     @property
     def dot(self):
