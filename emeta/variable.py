@@ -276,3 +276,16 @@ class Par(Variable):
 
     def dot_add(self, value):
         self.dot_value += value
+
+
+class Filter(Variable):
+
+    def __init__(self, var):
+        super().__init__(var)
+        self.var = var
+
+    def eval(self, *args, **kwargs):
+        return self.var(*args, **kwargs)
+
+    def __getattr__(self, attr):
+        return getattr(self.var, attr)
