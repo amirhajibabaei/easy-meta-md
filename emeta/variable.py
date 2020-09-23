@@ -246,12 +246,11 @@ class Par(Variable):
         Par.instances[name] = self
         self.params.add(self)
 
-    def eval(self, *args, **kwargs):
+    def eval(self):
         return self.value
 
     def __repr__(self):
-        args = argstr(*self.init_args, **self.init_kwargs)
-        return f'Param({args})'
+        return f'Param("{self.name}")'
 
     def set(self, value):
         self.value = value
