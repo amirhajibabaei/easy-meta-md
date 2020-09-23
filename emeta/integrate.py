@@ -1,4 +1,7 @@
 # +
+import torch
+
+
 class Traj:
 
     def __init__(self, file=None, mode='w'):
@@ -34,6 +37,36 @@ def verlet(energy, dt, steps, file=None, mode='w'):
         traj.write(f'{energy().data} ')
         for x in energy.params:
             x._dot(dt*(x._force+x.force)/2)
+            traj.write(f'{x().data} {x.dot} ')
+        traj.write('\n')
+    traj.close()
+
+
+def langevin(energy, dt, f, kt, steps, file=None, mode='w'):
+    # J. Chem. Phys. 138, 174102 (2013)
+    traj = Traj(file, mode)
+    traj.write('# energy ')
+    for x in energy.params:
+        traj.write(f'{x.name} {x.name}_dot ')
+    traj.write('\n')
+    alpha = torch.tensor(-f*dt).exp()
+    beta = (1-alpha**2).sqrt()*torch.tensor(kt).sqrt()
+    for _ in range(steps):
+        try:
+            energy().backward()
+        except:
+            pass
+        for x in energy.params:
+            x._dot(dt*x.force/2)
+            x.add(dt*x.dot/2)
+        energy().backward()
+        for x in energy.params:
+            x.dot_(x.dot*alpha + beta*torch.randn(x.dot.shape))
+            x.add(dt*x.dot/2)
+        energy().backward()
+        traj.write(f'{energy().data} ')
+        for x in energy.params:
+            x._dot(dt*x.force/2)
             traj.write(f'{x().data} {x.dot} ')
         traj.write('\n')
     traj.close()
