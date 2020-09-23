@@ -255,18 +255,22 @@ class Par(Variable):
 
     def set(self, value):
         self.value = value
+        self._ext = None
         self._forward()
 
     def add(self, value):
         self.value.data += value
         self.value.grad = None
+        self._ext = None
         self._forward()
 
     @property
     def force(self):
         f = self.value.grad
+        if self._ext is None:
+            self._ext = self.external(self)
         if f is not None:
-            return -f + self.external(self)
+            return -f + self._ext
 
     @property
     def dot(self):
