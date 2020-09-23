@@ -265,8 +265,7 @@ class Par(Variable):
     def force(self):
         f = self.value.grad
         if f is not None:
-            f *= -1
-        return f
+            return -f
 
     @property
     def dot(self):
