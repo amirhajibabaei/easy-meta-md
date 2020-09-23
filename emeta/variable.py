@@ -5,10 +5,7 @@ class Variable:
         self.init_args = init_args
         self.init_kwargs = init_kwargs
         self.dependencies = set()
-        if isinstance(self, Param):
-            self.params = set({self})
-        else:
-            self.params = set()
+        self.params = set()
         for arg in (*init_args, *init_kwargs.values()):
             if isinstance(arg, Variable):
                 self.dependencies.add(arg)
@@ -231,41 +228,53 @@ class Neg(Variable):
         return -eval(self.arg, *eval_args, **eval_kwargs)
 
 
-class Param(Variable):
+def Param(name):
+    try:
+        return Par.instances[name]
+    except KeyError:
+        return Par(name)
 
-    data = {}
-    dot_data = {}
+
+class Par(Variable):
+
+    instances = {}
 
     def __init__(self, name):
+        assert name not in Par.instances
         super().__init__(name)
         self.name = name
+        Par.instances[name] = self
+        self.params.add(self)
 
     def eval(self, *args, **kwargs):
-        return Param.data[self.name]
+        return self.value
+
+    def __repr__(self):
+        args = argstr(*self.init_args, **self.init_kwargs)
+        return f'Param({args})'
 
     def set(self, value):
-        Param.data[self.name] = value
+        self.value = value
         self._forward()
 
     def add(self, value):
-        Param.data[self.name].data += value
-        Param.data[self.name].grad = None
+        self.value.data += value
+        self.value.grad = None
         self._forward()
 
     @property
     def force(self):
-        f = Param.data[self.name].grad
+        f = self.value.grad
         if f is not None:
             f *= -1
         return f
 
     @property
     def dot(self):
-        if self.name in Param.dot_data:
-            return Param.dot_data[self.name]
+        return self.dot_value
 
     def dot_set(self, value):
-        Param.dot_data[self.name] = value
+        self.dot_value = value
 
     def dot_add(self, value):
-        Param.dot_data[self.name] += value
+        self.dot_value += value
