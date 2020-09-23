@@ -33,7 +33,7 @@ def verlet(energy, dt, steps, file=None, mode='w'):
         energy().backward()
         traj.write(f'{energy().data} ')
         for x in energy.params:
-            x.dot_add(dt*(x._force+x.force)/2)
+            x._dot(dt*(x._force+x.force)/2)
             traj.write(f'{x().data} {x.dot} ')
         traj.write('\n')
     traj.close()

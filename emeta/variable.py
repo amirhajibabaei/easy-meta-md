@@ -271,8 +271,8 @@ class Par(Variable):
     def dot(self):
         return self.dot_value
 
-    def dot_set(self, value):
+    def dot_(self, value):
         self.dot_value = value
 
-    def dot_add(self, value):
+    def _dot(self, value):
         self.dot_value += value
