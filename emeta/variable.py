@@ -1,4 +1,7 @@
 # +
+import torch
+
+
 class Variable:
 
     def __init__(self, *init_args, **init_kwargs):
@@ -252,8 +255,9 @@ class Par(Variable):
     def __repr__(self):
         return f'Param("{self.name}")'
 
-    def set(self, value):
-        self.value = value
+    def set(self, value, rg=True):
+        self.value = torch.as_tensor(value)
+        self.value.requires_grad = rg
         self._forward()
 
     def add(self, value):
