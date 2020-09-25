@@ -15,23 +15,23 @@ class Variable:
                 arg.dependants.add(self)
                 self.params = self.params.union(arg.params)
         self.dependants = set()
-        self.result = None
+        self.value = None
 
     def eval(self, *eval_args, **eval_kwargs):
         raise RuntimeError('implement in a subclass')
 
     def __call__(self, *eval_args, **eval_kwargs):
-        if self.result is None:
-            self.result = self.eval(*eval_args, **eval_kwargs)
-        return self.result
+        if self.value is None:
+            self.value = self.eval(*eval_args, **eval_kwargs)
+        return self.value
 
     def _forward(self):
-        self.result = None
+        self.value = None
         for dep in self.dependants:
             dep._forward()
 
     def _backward(self):
-        self.result = None
+        self.value = None
         for dep in self.dependencies:
             dep._backward()
 
@@ -250,33 +250,33 @@ class Par(Variable):
         self.params.add(self)
 
     def eval(self):
-        return self.value
+        return self.data
 
     def __repr__(self):
         return f'Param("{self.name}")'
 
-    def set(self, value, rg=True):
-        self.value = torch.as_tensor(value)
-        self.value.requires_grad = rg
+    def set(self, data, rg=True):
+        self.data = torch.as_tensor(data)
+        self.data.requires_grad = rg
         self._forward()
 
-    def add(self, value):
-        self.value.data += value
-        self.value.grad = None
+    def add(self, data):
+        self.data.data += data
+        self.data.grad = None
         self._forward()
 
     @property
     def force(self):
-        f = self.value.grad
+        f = self.data.grad
         if f is not None:
             return -f
 
     @property
     def dot(self):
-        return self.dot_value
+        return self.dot_data
 
-    def dot_(self, value):
-        self.dot_value = value
+    def dot_(self, data):
+        self.dot_data = data
 
-    def _dot(self, value):
-        self.dot_value += value
+    def _dot(self, data):
+        self.dot_data += data
