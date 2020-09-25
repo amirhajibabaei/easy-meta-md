@@ -9,11 +9,13 @@ class Variable:
         self.init_kwargs = init_kwargs
         self.dependencies = set()
         self.params = set()
+        self.hists = set()
         for arg in (*init_args, *init_kwargs.values()):
             if isinstance(arg, Variable):
                 self.dependencies.add(arg)
                 arg.dependants.add(self)
                 self.params = self.params.union(arg.params)
+                self.hists = self.hists.union(arg.hists)
         self.dependants = set()
         self.value = None
 
@@ -39,6 +41,10 @@ class Variable:
         self.value = None
         for dep in self.dependencies:
             dep._backward()
+
+    def update_history(self):
+        for hist in self.hists:
+            hist.update()
 
     def __add__(self, other):
         return binary_op(self, other, Sum)
@@ -295,6 +301,7 @@ class History(Variable):
         self.file = file
         self.history = []
         self.write(f'# {var}', 'w')
+        self.hists.add(self)
 
     def write(self, msg, mode='a'):
         if self.file:
@@ -302,7 +309,11 @@ class History(Variable):
                 f.write(f'{msg}\n')
 
     def eval(self, contex):
-        t = self.var(contex).clone().detach()
+        if self.history == []:
+            self.update()
+        return torch.cat(self.history)
+
+    def update(self):
+        t = self.var().clone().detach()
         self.history.append(t)
         self.write(t.tolist())
-        return torch.cat(self.history)
