@@ -17,12 +17,12 @@ class Variable:
         self.dependants = set()
         self.value = None
 
-    def eval(self, *eval_args, **eval_kwargs):
+    def eval(self):
         raise RuntimeError('implement in a subclass')
 
-    def __call__(self, *eval_args, **eval_kwargs):
+    def __call__(self):
         if self.value is None:
-            self.value = self.eval(*eval_args, **eval_kwargs)
+            self.value = self.eval()
         return self.value
 
     def _forward(self):
@@ -92,9 +92,9 @@ def argstr(*args, **kwargs):
     return ', '.join(ar)
 
 
-def eval(var, *eval_args, **eval_kwargs):
+def eval(var):
     if isinstance(var, Variable):
-        return var(*eval_args, **eval_kwargs)
+        return var.eval()
     else:
         return var
 
@@ -118,8 +118,8 @@ class Attr(Variable):
         self.args = args
         self.kwargs = kwargs
 
-    def eval(self, *eval_args, **eval_kwargs):
-        val = eval(self.var, *eval_args, **eval_kwargs)
+    def eval(self):
+        val = eval(self.var)
         return getattr(val, self.attr)(*self.args, **self.kwargs)
 
     def __repr__(self):
@@ -150,10 +150,10 @@ class Binary(Variable):
     def __repr__(self):
         return f'({self.symbol.join([str(arg) for arg in self.args])})'
 
-    def eval(self, *eval_args, **eval_kwargs):
-        result = eval(self.args[0], *eval_args, **eval_kwargs)
+    def eval(self):
+        result = eval(self.args[0])
         for arg in self.args[1:]:
-            a = eval(arg, *eval_args, **eval_kwargs)
+            a = eval(arg)
             result = self.op(result, a)
         return result
 
@@ -227,8 +227,8 @@ class Neg(Variable):
     def __repr__(self):
         return f'(-{self.arg})'
 
-    def eval(self, *eval_args, **eval_kwargs):
-        return -eval(self.arg, *eval_args, **eval_kwargs)
+    def eval(self):
+        return -eval(self.arg)
 
 
 def Param(name):
