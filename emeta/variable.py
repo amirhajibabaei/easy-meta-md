@@ -21,6 +21,11 @@ class Variable:
         raise RuntimeError('implement in a subclass')
 
     def __call__(self, context=None):
+        if context:
+            if self in context:
+                return context[self]
+            else:
+                return self.eval(context)
         if self.value is None:
             self.value = self.eval(context)
         return self.value
