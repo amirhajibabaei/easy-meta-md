@@ -295,13 +295,14 @@ class Par(Variable):
 
 class History(Variable):
 
-    def __init__(self, var, file=None):
+    def __init__(self, var, file=None, stop=float('inf')):
         super().__init__(var, file=file)
         self.var = var
         self.file = file
         self.history = []
         self.write(f'# {var}', 'w')
         self.hists.add(self)
+        self.stop = stop
 
     def write(self, msg, mode='a'):
         if self.file:
@@ -314,6 +315,7 @@ class History(Variable):
         return torch.cat(self.history)
 
     def update(self):
-        t = self.var().clone().detach()
-        self.history.append(t)
-        self.write(t.tolist())
+        if len(self.history) < self.stop:
+            t = self.var().clone().detach()
+            self.history.append(t)
+            self.write(t.tolist())
