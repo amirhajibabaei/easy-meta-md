@@ -1,4 +1,5 @@
 # +
+from collections import Counter
 import torch
 
 
@@ -320,3 +321,35 @@ class History(Variable):
             t = self.var().clone().detach()
             self.history.append(t)
             self.write(t.tolist())
+
+
+def discrete(val, delta):
+    return tuple(val.div(delta).floor().int().view(-1).tolist())
+
+
+class Histogram(Variable):
+
+    def __init__(self, var, delta):
+        super().__init__(var, delta)
+        self.requires_update.add(self)
+        self.var = var
+        self.delta = torch.as_tensor(delta)
+        self.hst = Counter()
+
+    def eval(self, context):
+        return self.hst[discrete(self.var(contex), self.delta)]
+
+    def update(self):
+        self.hst[discrete(self.var(), self.delta)] += 1.
+
+    def full(self, density=True):
+        x = []
+        y = []
+        for a, b in self.hst.items():
+            x.append(torch.tensor(a)*self.delta)
+            y.append(torch.tensor(b))
+        x = torch.stack(x)
+        y = torch.stack(y)
+        if density:
+            y /= y.sum()*self.delta.prod()
+        return x, y
