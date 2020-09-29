@@ -1,5 +1,6 @@
 # +
 from collections import Counter
+from math import pi
 import torch
 
 
@@ -353,3 +354,18 @@ class Histogram(Variable):
         if density:
             y /= y.sum()*self.delta.prod()
         return x, y
+
+
+class Gaussian_KDE(Histogram):
+
+    def __init__(self, var, delta):
+        super().__init__(var, delta)
+
+    def eval(self, context):
+        x = self.var(context)
+        X, y = self.full(density=False)
+        d = (x[:, None]-X[None]).div(self.delta).norm(dim=-1)
+        k = d.pow(2).neg().exp()
+        p = torch.tensor(pi).sqrt()
+        kde = k.mul(y).sum(dim=-1) / p
+        return kde
