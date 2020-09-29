@@ -349,6 +349,8 @@ class Histogram(Variable):
         for a, b in self.hst.items():
             x.append(torch.tensor(a)*self.delta)
             y.append(torch.tensor(b))
+        if len(x) == 0:
+            return None, None
         x = torch.stack(x)
         y = torch.stack(y)
         if density:
@@ -362,8 +364,10 @@ class Gaussian_KDE(Histogram):
         super().__init__(var, delta)
 
     def eval(self, context):
-        x = self.var(context)
+        x = self.var(context).view(-1)
         X, y = self.full(density=False)
+        if X is None:
+            return torch.zeros(1)
         d = (x[:, None]-X[None]).div(self.delta).norm(dim=-1)
         k = d.pow(2).neg().exp()
         p = torch.tensor(pi).sqrt()
