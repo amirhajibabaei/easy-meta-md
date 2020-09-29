@@ -39,7 +39,7 @@ def verlet(energy, dt, steps, file=None, mode='w'):
             x._dot(dt*(x._force+x.force)/2)
             traj.write(f'{x().data} {x.dot} ')
         traj.write('\n')
-        energy.update_history()
+        energy.update()
     traj.close()
 
 
@@ -70,5 +70,5 @@ def langevin(energy, dt, f, kt, steps, file=None, mode='w'):
             x._dot(dt*x.force/2)
             traj.write(f'{x().data} {x.dot} ')
         traj.write('\n')
-        energy.update_history()
+        energy.update()
     traj.close()

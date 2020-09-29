@@ -9,13 +9,14 @@ class Variable:
         self.init_kwargs = init_kwargs
         self.dependencies = set()
         self.params = set()
-        self.hists = set()
+        self.requires_update = set()
         for arg in (*init_args, *init_kwargs.values()):
             if isinstance(arg, Variable):
                 self.dependencies.add(arg)
                 arg.dependants.add(self)
                 self.params = self.params.union(arg.params)
-                self.hists = self.hists.union(arg.hists)
+                self.requires_update = self.requires_update.union(
+                    arg.requires_update)
         self.dependants = set()
         self.value = None
 
@@ -42,9 +43,9 @@ class Variable:
         for dep in self.dependencies:
             dep._backward()
 
-    def update_history(self):
-        for hist in self.hists:
-            hist.update()
+    def update(self):
+        for var in self.requires_update:
+            var.update()
 
     def __add__(self, other):
         return binary_op(self, other, Sum)
@@ -297,11 +298,11 @@ class History(Variable):
 
     def __init__(self, var, file=None, stop=float('inf')):
         super().__init__(var, file=file)
+        self.requires_update.add(self)
         self.var = var
         self.file = file
         self.history = []
         self.write(f'# {var}', 'w')
-        self.hists.add(self)
         self.stop = stop
 
     def write(self, msg, mode='a'):
