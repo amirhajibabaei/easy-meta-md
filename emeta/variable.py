@@ -324,6 +324,15 @@ class History(Variable):
             self.write(t.tolist())
 
 
+class Flat(Variable):
+
+    def __init__(self, *args):
+        super().__init__(*args)
+
+    def eval(self, contex):
+        return torch.cat([var(contex).view(-1) for var in self.init_args])
+
+
 def discrete(val, delta):
     return tuple(val.div(delta).floor().int().view(-1).tolist())
 
@@ -364,10 +373,10 @@ class Gaussian_KDE(Histogram):
         super().__init__(var, delta)
 
     def eval(self, context):
-        x = self.var(context).view(-1)
         X, y = self.full(density=False)
         if X is None:
             return torch.zeros(1)
+        x = self.var(context)
         d = (x[:, None]-X[None]).div(self.delta).norm(dim=-1)
         k = d.pow(2).neg().exp()
         p = torch.tensor(pi).sqrt()
