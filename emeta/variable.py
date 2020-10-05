@@ -345,12 +345,14 @@ class Histogram(Variable):
         self.var = var
         self.delta = torch.as_tensor(delta)
         self.hst = Counter()
+        self.fixed = False
 
     def evaluate(self, context):
         return self.hst[discrete(self.var(contex), self.delta)]
 
     def update(self):
-        self.hst[discrete(self.var(), self.delta)] += 1.
+        if not self.fixed:
+            self.hst[discrete(self.var(), self.delta)] += 1.
 
     def full(self, density=True):
         x = []
