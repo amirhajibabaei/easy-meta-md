@@ -22,7 +22,7 @@ class Variable:
         self.dependants = set()
         self.value = None
 
-    def eval(self, context):
+    def evaluate(self, context):
         raise RuntimeError('implement in a subclass')
 
     def __call__(self, context=None):
@@ -30,9 +30,9 @@ class Variable:
             if self in context:
                 return context[self]
             else:
-                return self.eval(context)
+                return self.evaluate(context)
         if self.value is None:
-            self.value = self.eval(context)
+            self.value = self.evaluate(context)
         return self.value
 
     def _forward(self):
@@ -106,7 +106,7 @@ def argstr(*args, **kwargs):
     return ', '.join(ar)
 
 
-def eval(var, context):
+def evaluate(var, context):
     if isinstance(var, Variable):
         return var(context)
     else:
@@ -132,8 +132,8 @@ class Attr(Variable):
         self.args = args
         self.kwargs = kwargs
 
-    def eval(self, context):
-        val = eval(self.var, context)
+    def evaluate(self, context):
+        val = evaluate(self.var, context)
         return getattr(val, self.attr)(*self.args, **self.kwargs)
 
     def __repr__(self):
@@ -164,10 +164,10 @@ class Binary(Variable):
     def __repr__(self):
         return f'({self.symbol.join([str(arg) for arg in self.args])})'
 
-    def eval(self, context):
-        result = eval(self.args[0], context)
+    def evaluate(self, context):
+        result = evaluate(self.args[0], context)
         for arg in self.args[1:]:
-            a = eval(arg, context)
+            a = evaluate(arg, context)
             result = self.op(result, a)
         return result
 
@@ -241,8 +241,8 @@ class Neg(Variable):
     def __repr__(self):
         return f'(-{self.arg})'
 
-    def eval(self, context):
-        return -eval(self.arg, context)
+    def evaluate(self, context):
+        return -evaluate(self.arg, context)
 
 
 def Param(name):
@@ -263,7 +263,7 @@ class Par(Variable):
         Par.instances[name] = self
         self.params.add(self)
 
-    def eval(self, context):
+    def evaluate(self, context):
         return self.data
 
     def __repr__(self):
@@ -312,7 +312,7 @@ class History(Variable):
             with open(self.file, mode) as f:
                 f.write(f'{msg}\n')
 
-    def eval(self, contex):
+    def evaluate(self, contex):
         if self.history == []:
             self.update()
         return torch.cat(self.history)
@@ -329,7 +329,7 @@ class Flat(Variable):
     def __init__(self, *args):
         super().__init__(*args)
 
-    def eval(self, contex):
+    def evaluate(self, contex):
         return torch.cat([var(contex).view(-1) for var in self.init_args])
 
 
@@ -346,7 +346,7 @@ class Histogram(Variable):
         self.delta = torch.as_tensor(delta)
         self.hst = Counter()
 
-    def eval(self, context):
+    def evaluate(self, context):
         return self.hst[discrete(self.var(contex), self.delta)]
 
     def update(self):
@@ -372,7 +372,7 @@ class Gaussian_KDE(Histogram):
     def __init__(self, var, delta):
         super().__init__(var, delta)
 
-    def eval(self, context):
+    def evaluate(self, context):
         X, y = self.full(density=False)
         if X is None:
             return torch.zeros(1)
