@@ -366,6 +366,17 @@ class Histogram(Variable):
             y /= y.sum()*self.delta.prod()
         return x, y
 
+    def save(self, file):
+        with open(file, 'w') as f:
+            for key, val in self.hst.items():
+                f.write(f'{key} : {val}\n')
+
+    def load(self, file):
+        with open(file, 'r') as f:
+            for line in f:
+                key, val = line.split(':')
+                self.hst[eval(key)] += eval(val)
+
 
 class Gaussian_KDE(Histogram):
 
