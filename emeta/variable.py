@@ -355,15 +355,8 @@ class Histogram(Variable):
             self.hst[discrete(self.var(), self.delta)] += 1.
 
     def full(self, density=True):
-        x = []
-        y = []
-        for a, b in self.hst.items():
-            x.append(torch.tensor(a)*self.delta)
-            y.append(torch.tensor(b))
-        if len(x) == 0:
-            return None, None
-        x = torch.stack(x)
-        y = torch.stack(y)
+        x = torch.tensor(list(self.hst.keys()))*self.delta
+        y = torch.tensor(list(self.hst.values()))
         if density:
             y /= y.sum()*self.delta.prod()
         return x, y
