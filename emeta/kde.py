@@ -104,11 +104,12 @@ class KDE(Histogram):
 
 class KDR(Variable):
 
-    def __init__(self, var, kern, normalize=False):
+    def __init__(self, var, kern, epsilon=0.1, normalize=False):
         super().__init__(var, kern)
         self.requires_update.add(self)
         self.var = var
         self.kern = kern
+        self.epsilon = epsilon
         self.normalize = normalize
         self.fixed = False
         self.inducing = []
@@ -122,7 +123,7 @@ class KDR(Variable):
             x = self.var().clone().detach()
             if len(self.inducing) == 0:
                 self.inducing.append(x)
-                self.k = SPD(epsilon=1e-1)
+                self.k = SPD(epsilon=self.epsilon)
                 self.y = torch.ones(1, 1)
             else:
                 k = self.kern(x, self.X)
@@ -131,7 +132,7 @@ class KDR(Variable):
                     self.y = torch.cat([self.y, torch.zeros(1, 1)])
                     k = torch.cat([k, torch.ones(1, 1)], dim=1)
                 if self.normalize:
-                    k = k / (k@self.k.inverse()@k.t())
+                    k = k / (k@self.k.inverse()@k.t()).view([])
                 self.y += k.t()
 
     def evaluate(self, context):
