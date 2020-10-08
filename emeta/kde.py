@@ -1,5 +1,6 @@
 # +
 from .variable import Variable
+from .spd import SPD
 from collections import Counter
 from math import pi
 import torch
@@ -98,4 +99,43 @@ class KDE(Histogram):
         k = self.kern(x, X)
         p = torch.tensor(pi).sqrt()
         kde = k.mul(y).sum(dim=-1) / p
+        return kde
+
+
+class KDR(Variable):
+
+    def __init__(self, var, kern):
+        super().__init__(var, kern)
+        self.requires_update.add(self)
+        self.var = var
+        self.kern = kern
+        self.fixed = False
+        self.inducing = []
+
+    @property
+    def X(self):
+        return torch.stack(self.inducing)
+
+    def update(self):
+        if not self.fixed:
+            x = self.var().clone().detach()
+            if len(self.inducing) == 0:
+                self.inducing.append(x)
+                self.k = SPD(epsilon=1e-1)
+                self.y = torch.ones(1, 1)
+            else:
+                k = self.kern(x, self.X)
+                if self.k.append_(k, 1.):
+                    self.inducing.append(x)
+                    self.y = torch.cat([self.y, torch.zeros(1, 1)])
+                    k = torch.cat([k, torch.ones(1, 1)], dim=1)
+                self.y += k.t()
+
+    def evaluate(self, context):
+        if len(self.inducing) == 0:
+            return torch.zeros(1)
+        x = self.var(context)
+        k = self.kern(x, self.X)
+        y = self.k.inverse()@self.y
+        kde = (k@y).sum(dim=-1)
         return kde
