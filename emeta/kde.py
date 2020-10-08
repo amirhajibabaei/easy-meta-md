@@ -9,6 +9,17 @@ def discrete(val, delta):
     return tuple(val.div(delta).floor().int().view(-1).tolist())
 
 
+class GaussianKernel:
+
+    def __init__(self, delta):
+        self.delta = torch.as_tensor(delta)
+
+    def __call__(self, x, y):
+        d = (x[:, None]-y[None]).div(self.delta).norm(dim=-1)
+        k = d.pow(2).neg().exp()
+        return k
+
+
 class History(Variable):
 
     def __init__(self, var, file=None, stop=float('inf')):
@@ -73,18 +84,18 @@ class Histogram(Variable):
                 self.hst[eval(key)] += eval(val)
 
 
-class Gaussian_KDE(Histogram):
+class KDE(Histogram):
 
-    def __init__(self, var, delta):
-        super().__init__(var, delta)
+    def __init__(self, var, kern):
+        super().__init__(var, kern.delta)
+        self.kern = kern
 
     def evaluate(self, context):
         X, y = self.full(density=False)
         if X is None:
             return torch.zeros(1)
         x = self.var(context)
-        d = (x[:, None]-X[None]).div(self.delta).norm(dim=-1)
-        k = d.pow(2).neg().exp()
+        k = self.kern(x, X)
         p = torch.tensor(pi).sqrt()
         kde = k.mul(y).sum(dim=-1) / p
         return kde
