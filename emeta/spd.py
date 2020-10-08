@@ -13,7 +13,7 @@ def bordered(m, c, r, d):
 
 class SPD:
 
-    def __init__(self, matrix=None, epsilon=1e-2):
+    def __init__(self, matrix=None, epsilon=1e-1):
         self.data = matrix or torch.eye(1)
         self.epsilon = epsilon
         self._cholesky = None
@@ -43,8 +43,8 @@ class SPD:
             inv = chol.cholesky_inverse()
         except:
             return False
-        if chol.isnan().any() or inv.isnan().any():
-            return False
+        if data.isnan().any() or chol.isnan().any() or inv.isnan().any():
+            raise RuntimeError('nan in SPD!')
         #
         self.data = data
         self._cholesky = chol
