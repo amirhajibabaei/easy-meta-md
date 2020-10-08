@@ -16,6 +16,14 @@ class SPD:
     def __init__(self, matrix=None, epsilon=1e-1):
         self.data = matrix or torch.eye(1)
         self.epsilon = epsilon
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        self._data = data
         self._cholesky = None
         self._inverse = None
 
