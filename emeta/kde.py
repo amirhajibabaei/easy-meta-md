@@ -20,6 +20,49 @@ class GaussianKernel:
         k = d.pow(2).neg().div(2).exp()
         return k
 
+    def optimize(self, *args, **kwargs):
+        return None
+
+
+class GaussianARD:
+
+    def __init__(self, dim):
+        self.trans = torch.distributions.transforms.LowerCholeskyTransform()
+        self._param = torch.zeros(dim, dim)
+
+    @property
+    def covariance(self):
+        chol = self.trans(self._param)
+        return chol @ chol.t()
+
+    @property
+    def precision(self):
+        return self.trans(self._param).cholesky_inverse()
+
+    def __call__(self, x, y):
+        r = (x[:, None]-y[None])
+        d = ((r @ self.precision)*r).sum(dim=-1)
+        k = d.neg().div(2).exp()
+        return k
+
+    def optimize(self, x, y, steps=100, lr=None, noise=0.):
+        self._param.requires_grad_(True)
+        lr = lr or 1./y.var().sqrt()
+        optimizer = torch.optim.LBFGS([self._param], lr=lr)
+        for _ in range(steps):
+            def closure():
+                optimizer.zero_grad()
+                matrix = self(x, x) + noise*torch.eye(x.size(0))
+                cholesky = matrix.cholesky()
+                inverse = cholesky.cholesky_inverse()
+                mu = inverse @ y
+                loss = (y.T @ mu + 2*cholesky.diag().log().sum())
+                loss.backward()
+                return loss
+            optimizer.step(closure)
+        self._param.requires_grad_(False)
+        return self(x, x)
+
 
 class History(Variable):
 
@@ -134,6 +177,11 @@ class KDR(Variable):
                 if self.normalize:
                     k = k / (k@self.k.inverse()@k.t()).view([])
                 self.y += k.t()
+
+    def optimize(self, **kwargs):
+        opt = self.kern.optimize(self.X, self.y, **kwargs)
+        if opt is not None:
+            self.k.data = opt
 
     def evaluate(self, context):
         if len(self.inducing) == 0:
