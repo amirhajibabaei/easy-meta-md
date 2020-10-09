@@ -17,7 +17,7 @@ class GaussianKernel:
 
     def __call__(self, x, y):
         d = (x[:, None]-y[None]).div(self.delta).norm(dim=-1)
-        k = d.pow(2).neg().exp()
+        k = d.pow(2).neg().div(2).exp()
         return k
 
 
@@ -97,7 +97,7 @@ class KDE(Histogram):
             return torch.zeros(1)
         x = self.var(context)
         k = self.kern(x, X)
-        p = torch.tensor(pi).sqrt()
+        p = torch.tensor(2*pi).sqrt()
         kde = k.mul(y).sum(dim=-1) / p
         return kde
 
