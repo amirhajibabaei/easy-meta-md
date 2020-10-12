@@ -170,9 +170,11 @@ class KDR(Variable):
                 self.y = torch.ones(1, 1)
             else:
                 k = self.kern(x, self.X)
+                inv = self.k.inverse()
                 if self.k.append_(k, 1.):
                     self.inducing.append(x)
-                    self.y = torch.cat([self.y, torch.zeros(1, 1)])
+                    y = k@inv@self.y  # y(x) -> self.y
+                    self.y = torch.cat([self.y, y.view(1, 1)])
                     k = torch.cat([k, torch.ones(1, 1)], dim=1)
                 if self.normalize:
                     k = k / (k@self.k.inverse()@k.t()).view([])
