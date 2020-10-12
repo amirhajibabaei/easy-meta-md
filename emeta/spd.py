@@ -1,6 +1,7 @@
 # +
 import torch
 from math import pi
+import warnings
 
 
 def bordered(m, c, r, d):
@@ -53,6 +54,10 @@ class SPD:
             return False
         if data.isnan().any() or chol.isnan().any() or inv.isnan().any():
             raise RuntimeError('nan in SPD!')
+        ierr = (data@inv-torch.eye(data.size(0))).abs().max()
+        if ierr > 1e-3:
+            warnings.warn('spd.append_ rejected bc inv err > 1e-3')
+            return False
         #
         self.data = data
         self._cholesky = chol
