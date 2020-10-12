@@ -10,13 +10,26 @@ def discrete(val, delta):
     return tuple(val.div(delta).floor().int().view(-1).tolist())
 
 
+def conformed(x):
+    if x.dim() > 1:
+        return x
+    else:
+        return x.view(1, -1)
+
+
+def dist(x, y):
+    _x = conformed(x)
+    _y = conformed(y)
+    return _x[:, None]-_y[None]
+
+
 class GaussianKernel:
 
     def __init__(self, delta):
         self.delta = torch.as_tensor(delta)
 
     def __call__(self, x, y):
-        d = (x[:, None]-y[None]).div(self.delta).norm(dim=-1)
+        d = dist(x, y).div(self.delta).norm(dim=-1)
         k = d.pow(2).neg().div(2).exp()
         return k
 
@@ -40,7 +53,7 @@ class GaussianARD:
         return self.trans(self._param).cholesky_inverse()
 
     def __call__(self, x, y):
-        r = (x[:, None]-y[None])
+        r = dist(x, y)
         d = ((r @ self.precision)*r).sum(dim=-1)
         k = d.neg().div(2).exp()
         return k
