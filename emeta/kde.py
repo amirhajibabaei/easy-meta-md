@@ -160,7 +160,7 @@ class KDE(Histogram):
 
 class KDR(Variable):
 
-    def __init__(self, var, kern, epsilon=0.1, normalize=False):
+    def __init__(self, var, kern, epsilon=0.1, normalize=True):
         super().__init__(var, kern)
         self.requires_update.add(self)
         self.var = var
@@ -190,7 +190,7 @@ class KDR(Variable):
                     self.y = torch.cat([self.y, y.view(1, 1)])
                     k = torch.cat([k, torch.ones(1, 1)], dim=1)
                 if self.normalize:
-                    k = k / (k@self.k.inverse()@k.t()).view([])
+                    k = k / (k@self.k.inverse()@k.t()).sqrt().view([])
                 self.y += k.t()
 
     def optimize(self, **kwargs):
@@ -203,6 +203,8 @@ class KDR(Variable):
             return torch.zeros(1)
         x = self.var(context)
         k = self.kern(x, self.X)
+        if self.normalize:
+            k = k / (k@self.k.inverse()@k.t()).diag()[:, None].sqrt()
         y = self.k.inverse()@self.y
         kde = (k@y).sum(dim=-1)
         return kde
