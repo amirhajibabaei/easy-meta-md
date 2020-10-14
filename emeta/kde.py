@@ -6,6 +6,9 @@ from math import pi
 import torch
 
 
+gauss_norm = torch.tensor(2*pi).sqrt()
+
+
 def discrete(val, delta):
     return tuple(val.div(delta).floor().int().view(-1).tolist())
 
@@ -153,20 +156,18 @@ class KDE(Histogram):
             return torch.zeros(1)
         x = self.var(context)
         k = self.kern(x, X)
-        p = torch.tensor(2*pi).sqrt()
-        kde = k.mul(y).sum(dim=-1) / p
+        kde = k.mul(y).sum(dim=-1) / gauss_norm
         return kde
 
 
 class KDR(Variable):
 
-    def __init__(self, var, kern, epsilon=0.1, normalize=True):
+    def __init__(self, var, kern, epsilon=0.1):
         super().__init__(var, kern)
         self.requires_update.add(self)
         self.var = var
         self.kern = kern
         self.epsilon = epsilon
-        self.normalize = normalize
         self.fixed = False
         self.inducing = []
 
@@ -180,18 +181,19 @@ class KDR(Variable):
             if len(self.inducing) == 0:
                 self.inducing.append(x)
                 self.k = SPD(epsilon=self.epsilon)
-                self.y = torch.ones(1, 1)
+                self.mu = torch.ones(1, 1)
             else:
                 k = self.kern(x, self.X)
                 inv = self.k.inverse()
+                d_mu = inv@k.t()
+                self.mu += d_mu
                 if self.k.append_(k, 1.):
                     self.inducing.append(x)
-                    y = k@inv@self.y  # y(x) -> self.y
-                    self.y = torch.cat([self.y, y.view(1, 1)])
-                    k = torch.cat([k, torch.ones(1, 1)], dim=1)
-                if self.normalize:
-                    k = k / (k@self.k.inverse()@k.t()).sqrt().view([])
-                self.y += k.t()
+                    self.mu = torch.cat([self.mu, self().detach().view(1, 1)])
+
+    @property
+    def y(self):
+        return self.k.data@self.mu
 
     def optimize(self, **kwargs):
         opt = self.kern.optimize(self.X, self.y, **kwargs)
@@ -203,8 +205,5 @@ class KDR(Variable):
             return torch.zeros(1)
         x = self.var(context)
         k = self.kern(x, self.X)
-        if self.normalize:
-            k = k / (k@self.k.inverse()@k.t()).diag()[:, None].sqrt()
-        y = self.k.inverse()@self.y
-        kde = (k@y).sum(dim=-1)
-        return kde
+        kde = (k@self.mu).sum(dim=-1)
+        return kde / gauss_norm
