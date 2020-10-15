@@ -101,9 +101,9 @@ class History(Variable):
             self.update()
         return torch.cat(self.history)
 
-    def update(self):
+    def update(self, x=None):
         if len(self.history) < self.stop:
-            t = self.var().clone().detach()
+            t = x or self.var().clone().detach()
             self.history.append(t)
             self.write(t.tolist())
 
@@ -121,9 +121,9 @@ class Histogram(Variable):
     def evaluate(self, context):
         return self.hst[discrete(self.var(contex), self.delta)]
 
-    def update(self):
+    def update(self, x=None):
         if not self.fixed:
-            self.hst[discrete(self.var(), self.delta)] += 1.
+            self.hst[discrete(x or self.var(), self.delta)] += 1.
 
     def full(self, density=True):
         x = torch.tensor(list(self.hst.keys()))*self.delta
@@ -175,9 +175,9 @@ class KDR(Variable):
     def X(self):
         return torch.stack(self.inducing)
 
-    def update(self):
+    def update(self, x=None):
         if not self.fixed:
-            x = self.var().clone().detach()
+            x = x or self.var().clone().detach()
             if len(self.inducing) == 0:
                 self.inducing.append(x)
                 self.k = SPD(epsilon=self.epsilon)
@@ -189,7 +189,8 @@ class KDR(Variable):
                 self.mu += d_mu
                 if self.k.append_(k, 1.):
                     self.inducing.append(x)
-                    self.mu = torch.cat([self.mu, self().detach().view(1, 1)])
+                    #self.mu = torch.cat([self.mu, self().detach().view(1, 1)])
+                    self.mu = torch.cat([self.mu, torch.zeros(1, 1)])
 
     @property
     def y(self):
