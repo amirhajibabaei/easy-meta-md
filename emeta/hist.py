@@ -175,6 +175,10 @@ class KDR(Variable):
     def X(self):
         return torch.stack(self.inducing)
 
+    @property
+    def y(self):
+        return self.k.data@self.mu / gauss_norm
+
     def update(self, x=None):
         if not self.fixed:
             x = x or self.var().clone().detach()
@@ -191,10 +195,6 @@ class KDR(Variable):
                     self.inducing.append(x)
                     #self.mu = torch.cat([self.mu, self().detach().view(1, 1)])
                     self.mu = torch.cat([self.mu, torch.zeros(1, 1)])
-
-    @property
-    def y(self):
-        return self.k.data@self.mu
 
     def optimize(self, **kwargs):
         opt = self.kern.optimize(self.X, self.y, **kwargs)
