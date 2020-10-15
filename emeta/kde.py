@@ -155,7 +155,7 @@ class KDE(Histogram):
         if X is None:
             return torch.zeros(1)
         x = self.var(context)
-        k = self.kern(x, X)
+        k = self.kern(x, X+self.delta/2)  # <- dist from center of grid
         kde = k.mul(y).sum(dim=-1) / gauss_norm
         return kde
 
