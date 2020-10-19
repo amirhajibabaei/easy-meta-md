@@ -58,4 +58,4 @@ class Gaussian(Distance):
 
     @property
     def normalization(self):
-        return torch.tensor(2*pi).sqrt()
+        return torch.tensor(2*pi).pow(self.dim).sqrt()
