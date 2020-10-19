@@ -283,8 +283,9 @@ class Par(Variable):
 
     def add(self, data):
         self.data.data += data
-        self.data.grad.detach_()
-        self.data.grad.zero_()
+        if self.data.grad is not None:
+            self.data.grad.detach_()
+            self.data.grad.zero_()
         self._forward()
 
     @property
