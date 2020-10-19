@@ -1,4 +1,5 @@
 # +
+from math import pi
 import torch
 
 
@@ -54,3 +55,7 @@ class Gaussian(Distance):
 
     def evaluate(self, x, y):
         return super().evaluate(x, y).pow(2).neg().exp()
+
+    @property
+    def normalization(self):
+        return torch.tensor(2*pi).sqrt()
