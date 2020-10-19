@@ -54,7 +54,7 @@ class Gaussian(Distance):
         super().__init__(dim, scale=scale, norm=norm)
 
     def evaluate(self, x, y):
-        return super().evaluate(x, y).pow(2).neg().exp()
+        return super().evaluate(x, y).pow(2).div(2).neg().exp()
 
     @property
     def normalization(self):
