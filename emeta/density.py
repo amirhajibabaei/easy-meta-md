@@ -1,5 +1,6 @@
 # +
-from emeta.variable import Variable
+from .variable import Variable
+from .spd import SPD
 from collections import Counter
 import torch
 
@@ -64,3 +65,27 @@ class GridKDE(Density):
 
     def _update(self, x):
         self.count[discrete(x, self.kern.scale())] += 1.
+
+
+class KDR(Density):
+
+    def __init__(self, *args, epsilon=0.1, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.epsilon = epsilon
+
+    @property
+    def weights(self):
+        return self._w
+
+    def _update(self, x):
+        if len(self.data) == 0:
+            self.data.append(x)
+            self.k = SPD(epsilon=self.epsilon)
+            self._w = torch.ones(1, 1)
+        else:
+            k = self.kern(x.view(1, -1), self.inducing)
+            inv = self.k.inverse()
+            self._w += inv@k.t()
+            if self.k.append_(k, 1.):
+                self.data.append(x)
+                self._w = torch.cat([self._w, torch.zeros(1, 1)])
