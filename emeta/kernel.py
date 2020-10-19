@@ -59,3 +59,18 @@ class Gaussian(Distance):
     @property
     def normalization(self):
         return torch.tensor(2*pi).pow(self.dim).sqrt()*self.dvol
+
+
+def test_Gaussian():
+    delta = 0.2
+    inf = 10*delta
+    kern = Gaussian(2, delta)
+    center = torch.zeros(1, 2)
+    grid = torch.arange(-inf, inf, delta)
+    xy = torch.stack(torch.meshgrid(grid, grid), dim=-1).view(-1, 2)
+    integ = kern(xy, center).sum()*delta**2/kern.normalization
+    print(f'integ/normalization close to 1.: {integ.isclose(torch.ones(1))}')
+
+
+if __name__ == '__main__':
+    test_Gaussian()
