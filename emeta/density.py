@@ -21,15 +21,20 @@ class Density(Variable):
 
     @property
     def inducing(self):
-        return torch.stack(self.data)
+        if len(self.data) > 0:
+            return torch.stack(self.data)
+        else:
+            return None
 
     @property
     def weights(self):
         return None
 
     def evaluate(self, context):
-        input = torch.as_tensor(self.var(context))
+        input = torch.atleast_2d(torch.as_tensor(self.var(context)))
         inducing = self.inducing
+        if inducing is None:
+            return torch.tensor(0.)
         kern = self.kern(input, inducing)
         weights = self.weights.type(kern.type())
         if weights is None:
