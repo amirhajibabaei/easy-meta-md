@@ -74,9 +74,10 @@ class GridKDE(Density):
 
 class KDR(Density):
 
-    def __init__(self, *args, epsilon=0.1, **kwargs):
+    def __init__(self, *args, dirac=None, epsilon=0.1, **kwargs):
         super().__init__(*args, **kwargs)
         self.epsilon = epsilon
+        self.dirac = dirac or self.kern
 
     @property
     def weights(self):
@@ -88,9 +89,10 @@ class KDR(Density):
             self.k = SPD(epsilon=self.epsilon)
             self._w = torch.ones(1, 1)
         else:
-            k = self.kern(x.view(1, -1), self.inducing)
+            delta = self.dirac(x.view(1, -1), self.inducing)
             inv = self.k.inverse()
-            self._w += inv@k.t()
+            self._w += inv@delta.t()
+            k = self.kern(x.view(1, -1), self.inducing)
             if self.k.append_(k, 1.):
                 self.data.append(x)
                 self._w = torch.cat([self._w, torch.zeros(1, 1)])
