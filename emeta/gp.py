@@ -80,14 +80,11 @@ class GPModel(gpytorch.models.ExactGP):
         while True:
             optimizer.zero_grad()
             y = func(x)
-            if self:
-                try:
-                    var = self(x).variance
-                except:
-                    var = torch.ones(1)
-                loss = -y*var
-            else:
-                loss = -y
+            try:
+                var = self(x).variance
+            except:
+                var = torch.ones(1)
+            loss = -y*var
             loss.backward()
             optimizer.step()
             if loss_break(_loss, loss):
