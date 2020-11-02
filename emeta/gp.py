@@ -35,8 +35,8 @@ class GPModel(gpytorch.models.ExactGP):
         self.bootstrap(func, atol=atol)
 
     def sample(self, func, inputs, atol=0.1, train=True):
-        for x in inputs:
-            x = self.optimize_inducing(func, x)
+        for i in inputs:
+            x = self.optimize_inducing(func, i)
             f = func(x)
             if self.train_inputs[0].size(0) == 0:
                 self.append(x, f)
@@ -73,8 +73,8 @@ class GPModel(gpytorch.models.ExactGP):
         self.eval()
         self.likelihood.eval()
 
-    def optimize_inducing(self, func, x):
-        x.requires_grad = True
+    def optimize_inducing(self, func, i):
+        x = i.detach().clone().requires_grad_(True)
         optimizer = torch.optim.Adam([x], lr=0.1)
         _loss = None
         while True:
