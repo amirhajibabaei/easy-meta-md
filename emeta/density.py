@@ -72,12 +72,13 @@ class GridKDE(Density):
         self.count[discrete(x, self.kern.scale())] += 1.
 
 
-class KDR(Density):
+class _KDR(Density):
 
-    def __init__(self, *args, dirac=None, epsilon=0.1, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, var, kern, dirac=None, epsilon=0.1, noise=1e-6, as_hist=False):
+        super().__init__(var, kern, as_hist=as_hist)
         self.epsilon = epsilon
         self.dirac = dirac or self.kern
+        self.noise = noise
 
     @property
     def weights(self):
@@ -86,13 +87,37 @@ class KDR(Density):
     def _update(self, x):
         if len(self.data) == 0:
             self.data.append(x)
-            self.k = SPD(epsilon=self.epsilon)
+            self.k = SPD(torch.ones(1, 1)+self.noise, epsilon=self.epsilon)
             self._w = torch.ones(1, 1)
         else:
             delta = self.dirac(x.view(1, -1), self.inducing)
             inv = self.k.inverse()
             self._w += inv@delta.t()
             k = self.kern(x.view(1, -1), self.inducing)
-            if self.k.append_(k, 1.):
+            if self.k.append_(k, 1+self.noise):
                 self.data.append(x)
                 self._w = torch.cat([self._w, torch.zeros(1, 1)])
+
+
+class KDR(_KDR):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.total = 0
+
+    def evaluate(self, context):
+        input = torch.atleast_2d(torch.as_tensor(self.var(context)))
+        inducing = self.inducing
+        if inducing is None:
+            return torch.tensor(0.)
+        kern = self.kern(input, inducing)
+        weights = self.weights.type(kern.type())
+        kern = kern@weights
+        norm = self.total
+        if self.as_hist:
+            norm = 1./self.dirac.dvol
+        return kern.sum(dim=1)/(self.dirac.normalization*norm)
+
+    def _update(self, x):
+        super()._update(x)
+        self.total += 1
