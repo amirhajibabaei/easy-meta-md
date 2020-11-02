@@ -11,14 +11,16 @@ import gpytorch
 
 
 class GPModel(gpytorch.models.ExactGP):
-    def __init__(self, dim):
-        likelihood = gpytorch.likelihoods.GaussianLikelihood()
-        train_x = torch.empty(0, dim)
-        train_y = torch.empty(0)
+    def __init__(self, dim, x=None, y=None, mean=None, covar=None, ll=None):
+        train_x = x or torch.empty(0, dim)
+        train_y = y or torch.empty(0)
+        likelihood = ll or gpytorch.likelihoods.GaussianLikelihood()
         super().__init__(train_x, train_y, likelihood)
-        self.mean_module = gpytorch.means.ZeroMean()
-        self.covar_module = gpytorch.kernels.ScaleKernel(
+        self.mean_module = mean or gpytorch.means.ZeroMean()
+        self.covar_module = covar or gpytorch.kernels.ScaleKernel(
             gpytorch.kernels.RBFKernel())
+        self.eval()
+        self.likelihood.eval()
 
     def forward(self, x):
         mean_x = self.mean_module(x)
@@ -30,37 +32,39 @@ class GPModel(gpytorch.models.ExactGP):
         Y = torch.cat([self.train_targets, y.view(1)])
         self.set_train_data(X, Y, strict=False)
 
-    def build(self, func, inputs, atol=0.1, train=True):
-        self.sample(func, inputs, atol=atol, train=train)
-        self.bootstrap(func, atol=atol)
+    def build(self, func, inputs, rtol=0.1, train=True):
+        self.sample(func, inputs, rtol=rtol, train=train)
+        self.bootstrap(func, rtol=rtol)
 
-    def sample(self, func, inputs, atol=0.1, train=True):
+    def sample(self, func, inputs, rtol=0.1, train=True):
         for i in inputs:
             x = self.optimize_inducing(func, i)
-            f = func(x)
+            f = func(x).detach()
             if self.train_inputs[0].size(0) == 0:
                 self.append(x, f)
             else:
-                delta = (self(x).mean-f).abs()
-                if delta > atol:
+                m = self(x)
+                delta = (m.mean-f).abs()
+                if delta > rtol*(f+m.variance.sqrt()):
                     self.append(x, f)
             if train:
                 self.optimize_hyperparams()
 
-    def bootstrap(self, func, atol=0.1, iterations=2):
+    def bootstrap(self, func, rtol=0.1, iterations=2):
         for _ in range(iterations):
             inputs = self.train_inputs[0]
             self.set_train_data(torch.empty(0, inputs.size(1)),
                                 torch.empty(0), strict=False)
-            self.sample(func, inputs, atol=atol, train=False)
+            self.sample(func, inputs, rtol=rtol, train=False)
             self.optimize_hyperparams()
 
-    def optimize_hyperparams(self):
+    def optimize_hyperparams(self, max_steps=None):
         self.train()
         self.likelihood.train()
         optimizer = torch.optim.Adam(self.parameters(), lr=0.1)
         mll = gpytorch.mlls.ExactMarginalLogLikelihood(self.likelihood, self)
         _loss = None
+        steps = 0
         while True:
             optimizer.zero_grad()
             output = self(self.train_inputs[0])
@@ -70,6 +74,9 @@ class GPModel(gpytorch.models.ExactGP):
             if loss_break(_loss, loss):
                 break
             _loss = loss
+            steps += 1
+            if max_steps and steps >= max_steps:
+                break
         self.eval()
         self.likelihood.eval()
 
